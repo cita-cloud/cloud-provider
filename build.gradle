@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+}
+
+group 'com.cita'
+version '1.0-SNAPSHOT'
+
+// 指定编码格式
+[compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
+// 指定JDK版本
+sourceCompatibility = '8'
+targetCompatibility = '8'
+
+repositories {
+    mavenLocal()
+    maven { url 'https://maven.aliyun.com/nexus/content/groups/public/' }
+    maven { url 'https://maven.aliyun.com/nexus/content/repositories/jcenter' }
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'io.kubernetes:client-java:17.0.1'
+    implementation 'io.kubernetes:client-java-extended:17.0.1'
+    compileOnly 'org.springframework:org.springframework.core:3.2.2.RELEASE'
+    compileOnly 'org.springframework:org.springframework.context:3.2.2.RELEASE'
+    compileOnly 'com.google.code.gson:gson:2.10.1'
+}
+
+test {
+    useJUnitPlatform()
+}
