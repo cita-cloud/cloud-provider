@@ -1,57 +1,44 @@
 package com.cita.provider.param;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 public class Backend {
     // 备份仓库对应的secret
-    String repoPasswordSecretName;
-    String repoPasswordSecretKey;
+    RepoPasswordSecret repoPasswordSecretRef;
 
     // 后端存储的类型：local/s3
-    JsonObject backendType;
+    BackendLocal local;
+    BackendS3 s3;
 
     public Backend() {
     }
 
-    public Backend(String repoPasswordSecretName, String repoPasswordSecretKey, BackendType backendType) {
-        this.repoPasswordSecretName = repoPasswordSecretName;
-        this.repoPasswordSecretKey = repoPasswordSecretKey;
-        this.setBackendType(backendType);
+    public Backend(RepoPasswordSecret repoPasswordSecretRef, BackendLocal local, BackendS3 s3) {
+        this.repoPasswordSecretRef = repoPasswordSecretRef;
+        this.local = local;
+        this.s3 = s3;
     }
 
-    public String getRepoPasswordSecretName() {
-        return repoPasswordSecretName;
+    public RepoPasswordSecret getRepoPasswordSecretRef() {
+        return repoPasswordSecretRef;
     }
 
-    public void setRepoPasswordSecretName(String repoPasswordSecretName) {
-        this.repoPasswordSecretName = repoPasswordSecretName;
+    public void setRepoPasswordSecretRef(RepoPasswordSecret repoPasswordSecretRef) {
+        this.repoPasswordSecretRef = repoPasswordSecretRef;
     }
 
-    public String getRepoPasswordSecretKey() {
-        return repoPasswordSecretKey;
+    public BackendLocal getLocal() {
+        return local;
     }
 
-    public void setRepoPasswordSecretKey(String repoPasswordSecretKey) {
-        this.repoPasswordSecretKey = repoPasswordSecretKey;
+    public void setLocal(BackendLocal local) {
+        this.local = local;
     }
 
-    public JsonObject getBackendType() {
-        return backendType;
+    public BackendS3 getS3() {
+        return s3;
     }
 
-    public void setBackendType(BackendType backendType) {
-        Gson gson = new Gson();
-        JsonObject object = new JsonObject();
-        switch (backendType.type) {
-            case LOCAL:
-                BackendLocal backendLocal = (BackendLocal) backendType;
-                object.addProperty("local", gson.toJson(backendLocal));
-                break;
-            case S3:
-                BackendS3 backendS3 = (BackendS3) backendType;
-                object.addProperty("s3", gson.toJson(backendS3));
-        }
-        this.backendType = object;
+    public void setS3(BackendS3 s3) {
+        this.s3 = s3;
     }
 }

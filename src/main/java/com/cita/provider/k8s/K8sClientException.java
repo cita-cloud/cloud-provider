@@ -34,4 +34,19 @@ public class K8sClientException extends RuntimeException {
         this.args = args;
     }
 
+    public String getDetailMsg() {
+        return detailMsg;
+    }
+
+    public void setDetailMsg(String detailMsg) {
+        this.detailMsg = detailMsg;
+    }
+
+    public Object[] getArgs() {
+        return args;
+    }
+
+    public void setArgs(Object[] args) {
+        this.args = args;
+    }
 }

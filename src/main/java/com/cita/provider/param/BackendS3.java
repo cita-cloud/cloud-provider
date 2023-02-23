@@ -1,6 +1,9 @@
 package com.cita.provider.param;
 
-public class BackendS3 extends BackendType {
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+public class BackendS3 {
     // s3 endpoint
     String endpoint;
 
@@ -8,25 +11,19 @@ public class BackendS3 extends BackendType {
     String bucket;
 
     // accessKeyID
-    String accessKeyIDSecretName;
-    String accessKeyIDSecretKey;
+    AccessKeyIDSecret accessKeyIDSecretRef;
 
     // secretAccessKey
-    String secretAccessKeySecretName;
-    String secretAccessKeySecretKey;
+    SecretAccessKeySecret secretAccessKeySecretRef;
 
     public BackendS3() {
-        super(Type.S3);
     }
 
-    public BackendS3(String endpoint, String bucket, String accessKeyIDSecretName, String accessKeyIDSecretKey, String secretAccessKeySecretName, String secretAccessKeySecretKey) {
-        super(Type.S3);
+    public BackendS3(String endpoint, String bucket, AccessKeyIDSecret accessKeyIDSecretRef, SecretAccessKeySecret secretAccessKeySecretRef) {
         this.endpoint = endpoint;
         this.bucket = bucket;
-        this.accessKeyIDSecretName = accessKeyIDSecretName;
-        this.accessKeyIDSecretKey = accessKeyIDSecretKey;
-        this.secretAccessKeySecretName = secretAccessKeySecretName;
-        this.secretAccessKeySecretKey = secretAccessKeySecretKey;
+        this.accessKeyIDSecretRef = accessKeyIDSecretRef;
+        this.secretAccessKeySecretRef = secretAccessKeySecretRef;
     }
 
     public String getEndpoint() {
@@ -45,35 +42,24 @@ public class BackendS3 extends BackendType {
         this.bucket = bucket;
     }
 
-    public String getAccessKeyIDSecretName() {
-        return accessKeyIDSecretName;
+    public AccessKeyIDSecret getAccessKeyIDSecretRef() {
+        return accessKeyIDSecretRef;
     }
 
-    public void setAccessKeyIDSecretName(String accessKeyIDSecretName) {
-        this.accessKeyIDSecretName = accessKeyIDSecretName;
+    public void setAccessKeyIDSecretRef(AccessKeyIDSecret accessKeyIDSecretRef) {
+        this.accessKeyIDSecretRef = accessKeyIDSecretRef;
     }
 
-    public String getAccessKeyIDSecretKey() {
-        return accessKeyIDSecretKey;
+    public SecretAccessKeySecret getSecretAccessKeySecretRef() {
+        return secretAccessKeySecretRef;
     }
 
-    public void setAccessKeyIDSecretKey(String accessKeyIDSecretKey) {
-        this.accessKeyIDSecretKey = accessKeyIDSecretKey;
+    public void setSecretAccessKeySecretRef(SecretAccessKeySecret secretAccessKeySecretRef) {
+        this.secretAccessKeySecretRef = secretAccessKeySecretRef;
     }
 
-    public String getSecretAccessKeySecretName() {
-        return secretAccessKeySecretName;
-    }
-
-    public void setSecretAccessKeySecretName(String secretAccessKeySecretName) {
-        this.secretAccessKeySecretName = secretAccessKeySecretName;
-    }
-
-    public String getSecretAccessKeySecretKey() {
-        return secretAccessKeySecretKey;
-    }
-
-    public void setSecretAccessKeySecretKey(String secretAccessKeySecretKey) {
-        this.secretAccessKeySecretKey = secretAccessKeySecretKey;
+    public JsonObject toJson() {
+        Gson gson = new Gson();
+        return gson.fromJson(gson.toJson(this), JsonObject.class);
     }
 }

@@ -1,7 +1,6 @@
 package com.cita.provider.param;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 public class BackupParam {
 
@@ -21,13 +20,13 @@ public class BackupParam {
     String chain;
 
     // 备份数据类型, full/state
-    JsonObject dataType;
+    BackupDataType dataType;
 
     // 失败的任务最大保留个数
-    int failedJobsHistoryLimit = 2;
+    int failedJobsHistoryLimit;
 
     // 成功的任务最大保留个数
-    int successfulJobsHistoryLimit = 2;
+    int successfulJobsHistoryLimit;
 
     // 后端存储信息
     Backend backend;
@@ -41,10 +40,10 @@ public class BackupParam {
         this.node = node;
         this.deployMethod = deployMethod;
         this.chain = chain;
-        this.setDataType(dataType);
+        this.dataType = dataType;
         this.failedJobsHistoryLimit = failedJobsHistoryLimit;
         this.successfulJobsHistoryLimit = successfulJobsHistoryLimit;
-        this.setBackend(backend);
+        this.backend = backend;
     }
 
     public String getName() {
@@ -87,23 +86,12 @@ public class BackupParam {
         this.chain = chain;
     }
 
-    public JsonObject getDataType() {
+    public BackupDataType getDataType() {
         return dataType;
     }
 
     public void setDataType(BackupDataType dataType) {
-        Gson gson = new Gson();
-        JsonObject object = new JsonObject();
-        switch (dataType.type) {
-            case FULL:
-                BackupFull backupFull = (BackupFull) dataType;
-                object.addProperty("full", gson.toJson(backupFull));
-                break;
-            case STATE:
-                BackupState backupState = (BackupState) dataType;
-                object.addProperty("state", gson.toJson(backupState));
-        }
-        this.dataType = object;
+        this.dataType = dataType;
     }
 
     public int getFailedJobsHistoryLimit() {
@@ -133,5 +121,83 @@ public class BackupParam {
     public String toJson() {
         Gson gson = new Gson();
         return gson.toJson(this);
+    }
+
+    public static final class Builder {
+        private String name;
+        private String namespace;
+        private String node;
+        private String deployMethod;
+        private String chain;
+        private BackupDataType dataType;
+        private int failedJobsHistoryLimit;
+        private int successfulJobsHistoryLimit;
+        private Backend backend;
+
+        private Builder() {
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder namespace(String namespace) {
+            this.namespace = namespace;
+            return this;
+        }
+
+        public Builder node(String node) {
+            this.node = node;
+            return this;
+        }
+
+        public Builder deployMethod(String deployMethod) {
+            this.deployMethod = deployMethod;
+            return this;
+        }
+
+        public Builder chain(String chain) {
+            this.chain = chain;
+            return this;
+        }
+
+        public Builder dataType(BackupDataType dataType) {
+            this.dataType = dataType;
+            return this;
+        }
+
+        public Builder failedJobsHistoryLimit(int failedJobsHistoryLimit) {
+            this.failedJobsHistoryLimit = failedJobsHistoryLimit;
+            return this;
+        }
+
+        public Builder successfulJobsHistoryLimit(int successfulJobsHistoryLimit) {
+            this.successfulJobsHistoryLimit = successfulJobsHistoryLimit;
+            return this;
+        }
+
+        public Builder backend(Backend backend) {
+            this.backend = backend;
+            return this;
+        }
+
+        public BackupParam build() {
+            BackupParam backupParam = new BackupParam();
+            backupParam.setName(name);
+            backupParam.setNamespace(namespace);
+            backupParam.setNode(node);
+            backupParam.setDeployMethod(deployMethod);
+            backupParam.setChain(chain);
+            backupParam.setDataType(dataType);
+            backupParam.setFailedJobsHistoryLimit(failedJobsHistoryLimit);
+            backupParam.setSuccessfulJobsHistoryLimit(successfulJobsHistoryLimit);
+            backupParam.setBackend(backend);
+            return backupParam;
+        }
     }
 }

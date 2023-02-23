@@ -1,6 +1,9 @@
 package com.cita.provider.param;
 
-public class BackendLocal extends BackendType {
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+public class BackendLocal {
     // 挂载点
     String mountPath;
 
@@ -8,11 +11,9 @@ public class BackendLocal extends BackendType {
     String storageClass;
 
     public BackendLocal() {
-        super(Type.LOCAL);
     }
 
     public BackendLocal(String mountPath, String storageClass) {
-        super(Type.LOCAL);
         this.mountPath = mountPath;
         this.storageClass = storageClass;
     }
@@ -31,5 +32,10 @@ public class BackendLocal extends BackendType {
 
     public void setStorageClass(String storageClass) {
         this.storageClass = storageClass;
+    }
+
+    public JsonObject toJson() {
+        Gson gson = new Gson();
+        return gson.fromJson(gson.toJson(this), JsonObject.class);
     }
 }

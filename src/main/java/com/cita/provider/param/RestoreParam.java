@@ -91,4 +91,68 @@ public class RestoreParam {
     public void setBackend(Backend backend) {
         this.backend = backend;
     }
+
+    public static final class Builder {
+        private String name;
+        private String namespace;
+        private String node;
+        private String deployMethod;
+        private String chain;
+        private String backup;
+        private Backend backend;
+
+        private Builder() {
+        }
+
+        public static Builder aRestoreParam() {
+            return new Builder();
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder namespace(String namespace) {
+            this.namespace = namespace;
+            return this;
+        }
+
+        public Builder node(String node) {
+            this.node = node;
+            return this;
+        }
+
+        public Builder deployMethod(String deployMethod) {
+            this.deployMethod = deployMethod;
+            return this;
+        }
+
+        public Builder chain(String chain) {
+            this.chain = chain;
+            return this;
+        }
+
+        public Builder backup(String backup) {
+            this.backup = backup;
+            return this;
+        }
+
+        public Builder backend(Backend backend) {
+            this.backend = backend;
+            return this;
+        }
+
+        public RestoreParam build() {
+            RestoreParam restoreParam = new RestoreParam();
+            restoreParam.setName(name);
+            restoreParam.setNamespace(namespace);
+            restoreParam.setNode(node);
+            restoreParam.setDeployMethod(deployMethod);
+            restoreParam.setChain(chain);
+            restoreParam.setBackup(backup);
+            restoreParam.setBackend(backend);
+            return restoreParam;
+        }
+    }
 }

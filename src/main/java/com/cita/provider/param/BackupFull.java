@@ -1,17 +1,19 @@
 package com.cita.provider.param;
 
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.util.List;
 
-public class BackupFull extends BackupDataType {
+public class BackupFull {
     // 需要备份的目录列表
     List<String> includePaths;
 
     public BackupFull() {
-        super(Type.FULL);
     }
 
     public BackupFull(List<String> includePaths) {
-        super(Type.FULL);
         this.includePaths = includePaths;
     }
 
@@ -21,5 +23,15 @@ public class BackupFull extends BackupDataType {
 
     public void setIncludePaths(List<String> includePaths) {
         this.includePaths = includePaths;
+    }
+
+    public JsonObject toJson() {
+        JsonObject jsonObject = new JsonObject();
+        JsonArray includePaths = new JsonArray();
+        for (String path : this.includePaths) {
+            includePaths.add(path);
+        }
+        jsonObject.add("includePaths", includePaths);
+        return jsonObject;
     }
 }

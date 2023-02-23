@@ -1,20 +1,20 @@
 package com.cita.provider.k8s;
 
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;
-import io.kubernetes.client.openapi.apis.AppsV1Api;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
-import io.kubernetes.client.openapi.models.V1APIResourceList;
-import io.kubernetes.client.openapi.models.V1NamespaceList;
-import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.apis.*;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
 import io.kubernetes.client.util.credentials.ClientCertificateAuthentication;
+import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.options.CreateOptions;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
+import io.kubernetes.client.util.generic.options.PatchOptions;
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,10 +62,16 @@ public class K8sInvokerClient {
     /* k8s核心api操作对象，包括对namespace、node、pod的各种操作 */
     private static final String API_OBJECT_CORE = "coreV1Api";
 
+    /* k8s的网络操作对象，例如：ingress等*/
+    private static final String API_OBJECT_NETWORK = "networkingV1Api";
+
+    /* k8s通用pod操作对象*/
+    private static final String API_OBJECT_GENERIC = "genericKubernetesApi";
+
     /* k8s的应用操作对象，例如：deployment等 */
     private static final String API_OBJECT_APP = "appsV1Api";
 
-    /* k8s的扩展操作对象，例如：ingress、replicaSet等*/
+    /* k8s拓展操作对象 */
     private static final String API_OBJECT_EXTENSION = "apiExtensionsV1Api";
     /* 定义一个hash map用于缓存各种常用的k8s api对象 */
     private static final ConcurrentHashMap<String, Object> k8sApiObjectMap = new ConcurrentHashMap<>();
@@ -82,6 +88,8 @@ public class K8sInvokerClient {
         kubeConfigProperty.put(CLIENT_KEY_MARK, "");
         k8sApiObjectMap.put(API_OBJECT_CRD, Optional.empty());
         k8sApiObjectMap.put(API_OBJECT_CORE, Optional.empty());
+        k8sApiObjectMap.put(API_OBJECT_NETWORK, Optional.empty());
+        k8sApiObjectMap.put(API_OBJECT_GENERIC, Optional.empty());
         k8sApiObjectMap.put(API_OBJECT_APP, Optional.empty());
         k8sApiObjectMap.put(API_OBJECT_EXTENSION, Optional.empty());
     }
@@ -134,7 +142,7 @@ public class K8sInvokerClient {
      * @author FreeQ
      * @date 2023/1/10 11:42
      **/
-    public static synchronized void initApiClient(URL kubeConfigURL) {
+    public static synchronized void initApiClient(URL kubeConfigURL) throws K8sClientInitException {
         //apiClient只能被有效初始化一次（初始化时没有出错，得到的对象不是空值，那么就判定是初始化成功的，如果在后续使用过程中出现异常，可通过refresh方法对客户端对象进行刷新）
         if (K8sInvokerClient.apiClient == null) {
             try {
@@ -154,7 +162,7 @@ public class K8sInvokerClient {
                     setApiClientByDefault();
                 }
                 if (apiClient == null) {
-                    throw new K8sClientInitException("创建【k8s-api客户端】发生异常，不能获取到有效的kubeConfig信息导致生成的apiClient对象为空！");
+                    throw new K8sClientInitException("创建【k8s-api客户端】发生异常，不能获取到有效的kubeConfig信息导致生成的api-client对象为空！");
                 }
                 Configuration.setDefaultApiClient(apiClient);
                 CoreV1Api coreV1Api = new CoreV1Api(apiClient);
@@ -163,20 +171,25 @@ public class K8sInvokerClient {
                     log.debug("成功初始化【k8s-api客户端】...{}", coreV1Api.getAPIResources().getGroupVersion());
                 }
                 k8sApiObjectMap.put(API_OBJECT_CORE, coreV1Api);
-            } catch (IOException | ApiException e) {
-                log.error("创建【k8s api客户端】发生异常...详细异常信息=>{}", e.toString());
-                throw new K8sClientInitException("初始化【k8s-api客户端】发生异常...详细异常信息=>" + e);
+            } catch (IOException e) {
+                log.error("创建【k8s api客户端】发生IO异常...详细异常信息==>{}", e.toString());
+                throw new K8sClientInitException("初始化【k8s-api客户端】发生IO异常...详细异常信息==>" + e);
+            } catch (ApiException e) {
+                log.error("创建【k8s api客户端】发生k8s api调用异常...详细异常信息==>{}", e.toString());
+                throw new K8sClientInitException("初始化【k8s-api客户端】发生k8s api调用异常...详细异常信息==>" + e);
             }
         }
     }
 
     private static void setApiClientByURL(URL kubeConfigURL) throws IOException {
+        log.debug("尝试通过读取传入URL资源中的kubeConfig文件对【api-client】进行初始化...");
         URLConnection urlConnection = kubeConfigURL.openConnection();
         KubeConfig kubeConfig = KubeConfig.loadKubeConfig(new InputStreamReader(urlConnection.getInputStream()));
         apiClient = ClientBuilder.kubeconfig(kubeConfig).build();
     }
 
     private static void setApiClientByProperty() {
+        log.debug("尝试读取框架application中的配置项对【api-client】进行初始化...");
         loadPropertyFromContext();
         if (kubeConfigProperty.get(SERVER_URL_MARK).isEmpty() || kubeConfigProperty.get(SERVER_CERTIFICATE_MARK).isEmpty()) {
             log.warn("从框架上下文中加载的配置信息缺少k8s客户端的关键性输入参数，放弃使用属性加载方式初始化k8s客户端！");
@@ -204,6 +217,7 @@ public class K8sInvokerClient {
     }
 
     private static void setApiClientByDefault() throws IOException {
+        log.debug("尝试读取运行时环境默认的kubeConfig信息方式对【api-client】进行初始化...");
         apiClient = Config.defaultClient();
     }
 
@@ -225,6 +239,8 @@ public class K8sInvokerClient {
         k8sApiObjectMap.put(API_OBJECT_CRD, new CustomObjectsApi(apiClient));
         k8sApiObjectMap.put(API_OBJECT_APP, new AppsV1Api(apiClient));
         k8sApiObjectMap.put(API_OBJECT_EXTENSION, new ApiextensionsV1Api(apiClient));
+        k8sApiObjectMap.put(API_OBJECT_NETWORK, new NetworkingV1Api(apiClient));
+        k8sApiObjectMap.put(API_OBJECT_GENERIC, new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "", "v1", "pods", apiClient));
     }
 
     /**
@@ -236,7 +252,7 @@ public class K8sInvokerClient {
     public static CustomObjectsApi getCustomApiObj() {
         if (k8sApiObjectMap.get(API_OBJECT_CRD).equals(Optional.empty())) {
             if (apiClient == null) {
-                throw new K8sClientInitException("k8s客户端的【api-client】对象未被有效创建，请先通过init方法创建【api-client】...");
+                throw new K8sClientInitException("【客户端初始化异常】请先调用init方法创建k8s客户端...");
             }
             k8sApiObjectMap.put(API_OBJECT_CRD, new CustomObjectsApi(apiClient));
         }
@@ -252,23 +268,23 @@ public class K8sInvokerClient {
     public static CoreV1Api getCoreApiObj() {
         if (k8sApiObjectMap.get(API_OBJECT_CORE).equals(Optional.empty())) {
             if (apiClient == null) {
-                throw new K8sClientInitException("k8s客户端的【api-client】对象未被有效创建，请先通过init方法创建【api-client】...");
+                throw new K8sClientInitException("【客户端初始化异常】请先调用init方法创建k8s客户端...");
             }
             k8sApiObjectMap.put(API_OBJECT_CORE, new CoreV1Api(apiClient));
         }
         return (CoreV1Api) k8sApiObjectMap.get(API_OBJECT_CORE);
     }
 
-    /*
-     * @description  获取k8s运行应用的api操作对象
-     * @author       FreeQ
-     * @date         2023/1/16 10:35
-     * @return       io.kubernetes.client.openapi.apis.AppsV1Api
+    /**
+     * @return io.kubernetes.client.openapi.apis.AppsV1Api
+     * @description 获取k8s运行应用的api操作对象
+     * @author FreeQ
+     * @date 2023/1/16 10:35
      **/
     public static AppsV1Api getAppApiObj() {
         if (k8sApiObjectMap.get(API_OBJECT_APP).equals(Optional.empty())) {
             if (apiClient == null) {
-                throw new K8sClientInitException("k8s客户端的【api-client】对象未被有效创建，请先通过init方法创建【api-client】...");
+                throw new K8sClientInitException("【客户端初始化异常】请先调用init方法创建k8s客户端...");
             }
             k8sApiObjectMap.put(API_OBJECT_APP, new AppsV1Api(apiClient));
         }
@@ -284,12 +300,164 @@ public class K8sInvokerClient {
     public static ApiextensionsV1Api getExtensionApiObj() {
         if (k8sApiObjectMap.get(API_OBJECT_EXTENSION).equals(Optional.empty())) {
             if (apiClient == null) {
-                throw new K8sClientInitException("k8s客户端的【api-client】对象未被有效创建，请先通过init方法创建【api-client】...");
+                throw new K8sClientInitException("【客户端初始化异常】请先调用init方法创建k8s客户端...");
             }
             k8sApiObjectMap.put(API_OBJECT_EXTENSION, new ApiextensionsV1Api(apiClient));
         }
         return (ApiextensionsV1Api) k8sApiObjectMap.get(API_OBJECT_EXTENSION);
     }
+
+    public static NetworkingV1Api getNetworkApiObj() {
+        if (k8sApiObjectMap.get(API_OBJECT_NETWORK).equals(Optional.empty())) {
+            if (apiClient == null) {
+                throw new K8sClientInitException("【客户端初始化异常】请先调用init方法创建k8s客户端...");
+            }
+            k8sApiObjectMap.put(API_OBJECT_NETWORK, new NetworkingV1Api(apiClient));
+        }
+        return (NetworkingV1Api) k8sApiObjectMap.get(API_OBJECT_NETWORK);
+    }
+
+    public static GenericKubernetesApi<V1Pod, V1PodList> getGenericK8sApiObj() {
+        if (k8sApiObjectMap.get(API_OBJECT_GENERIC).equals(Optional.empty())) {
+            if (apiClient == null) {
+                throw new K8sClientInitException("【客户端初始化异常】请先调用init方法创建k8s客户端...");
+            }
+            k8sApiObjectMap.put(API_OBJECT_GENERIC, new GenericKubernetesApi<>(V1Pod.class, V1PodList.class, "", "v1", "pods", apiClient));
+        }
+        return (GenericKubernetesApi<V1Pod, V1PodList>) k8sApiObjectMap.get(API_OBJECT_GENERIC);
+    }
+
+    //-------------------------------------------------集群资源写操作-----------------------------------------------------
+
+    public static V1Namespace createNameSpace(Object[] args) throws ApiException, ClassCastException {
+        CoreV1Api api = getCoreApiObj();
+        if (args == null || args.length == 0) {
+            throw new IllegalArgumentException("【入参无效异常】本操作必须输入[V1Namespace]对象作为第一入参...");
+        } else {
+            //适配具体要调用的k8s接口的参数个数，防止数组越界
+            Object[] suitableParams = new Object[5];
+            for (int i = 0; i < suitableParams.length; i++) {
+                if (i > args.length - 1) {
+                    suitableParams[i] = null;
+                } else {
+                    suitableParams[i] = args[i];
+                }
+            }
+            return api.createNamespace(getSuitableParam(suitableParams[0], V1Namespace.class),
+                    getSuitableParam(suitableParams[1], String.class),
+                    getSuitableParam(suitableParams[2], String.class),
+                    getSuitableParam(suitableParams[3], String.class),
+                    getSuitableParam(suitableParams[4], String.class));
+        }
+    }
+
+    public static V1Status deleteNameSpace(Object[] args) throws ApiException, ClassCastException {
+        CoreV1Api api = getCoreApiObj();
+        if (args == null || args.length == 0) {
+            throw new IllegalArgumentException("【入参无效异常】本操作必须输入namespace的[name]作为第一入参...");
+        } else {
+            //适配具体要调用的k8s接口的参数个数，防止数组越界
+            Object[] suitableParams = new Object[7];
+            for (int i = 0; i < suitableParams.length; i++) {
+                if (i > args.length - 1) {
+                    suitableParams[i] = null;
+                } else {
+                    suitableParams[i] = args[i];
+                }
+            }
+            return api.deleteNamespace(getSuitableParam(suitableParams[0], String.class),
+                    getSuitableParam(suitableParams[1], String.class),
+                    getSuitableParam(suitableParams[2], String.class),
+                    getSuitableParam(suitableParams[3], Integer.class),
+                    getSuitableParam(suitableParams[4], Boolean.class),
+                    getSuitableParam(suitableParams[5], String.class),
+                    getSuitableParam(suitableParams[6], V1DeleteOptions.class));
+        }
+    }
+
+    public static V1Ingress createIngress(Object[] args) throws ApiException, ClassCastException {
+        NetworkingV1Api api = getNetworkApiObj();
+        if (args == null || args.length < 2) {
+            throw new IllegalArgumentException("【入参无效异常】本操作必须输入[namespaceName]和[ingressBody]作为前两位入参...");
+        } else {
+            //适配具体要调用的k8s接口的参数个数，防止数组越界
+            Object[] suitableParams = new Object[6];
+            for (int i = 0; i < suitableParams.length; i++) {
+                if (i > args.length - 1) {
+                    suitableParams[i] = null;
+                } else {
+                    suitableParams[i] = args[i];
+                }
+            }
+            return api.createNamespacedIngress(getSuitableParam(suitableParams[0], String.class),
+                    getSuitableParam(suitableParams[1], V1Ingress.class),
+                    getSuitableParam(suitableParams[2], String.class),
+                    getSuitableParam(suitableParams[3], String.class),
+                    getSuitableParam(suitableParams[4], String.class),
+                    getSuitableParam(suitableParams[5], String.class));
+        }
+    }
+
+    //----------------------------------------------容器资源写操作-------------------------------------------------
+
+    public static V1Pod createPod(Object[] args) throws ApiException, ClassCastException {
+        GenericKubernetesApi<V1Pod, V1PodList> api = getGenericK8sApiObj();
+        if (args == null || args.length < 3) {
+            throw new IllegalArgumentException("【入参无效异常】本操作必须输入[namespace]、[V1Pod]、[CreateOptions]作为入参...");
+        } else {
+            //适配具体要调用的k8s接口的参数个数，防止数组越界
+            Object[] suitableParams = new Object[3];
+            System.arraycopy(args, 0, suitableParams, 0, suitableParams.length);
+            return api.create(getSuitableParam(suitableParams[0], String.class),
+                    getSuitableParam(suitableParams[1], V1Pod.class),
+                    getSuitableParam(suitableParams[2], CreateOptions.class)).throwsApiException().getObject();
+        }
+    }
+
+    public static V1Pod updatePod(Object[] args) throws ApiException, ClassCastException {
+        GenericKubernetesApi<V1Pod, V1PodList> api = getGenericK8sApiObj();
+        if (args == null || args.length < 2) {
+            throw new IllegalArgumentException("【入参无效异常】本操作必须输入目标pod的[namespace]和[name]作为前两位入参...");
+        } else {
+            //适配具体要调用的k8s接口的参数个数，防止数组越界
+            Object[] suitableParams = new Object[5];
+            for (int i = 0; i < suitableParams.length; i++) {
+                if (i > args.length - 1) {
+                    suitableParams[i] = null;
+                } else {
+                    suitableParams[i] = args[i];
+                }
+            }
+            return api.patch(getSuitableParam(suitableParams[0], String.class),
+                    getSuitableParam(suitableParams[1], String.class),
+                    getSuitableParam(suitableParams[2], String.class),
+                    getSuitableParam(suitableParams[3], V1Patch.class),
+                    getSuitableParam(suitableParams[4], PatchOptions.class)).throwsApiException().getObject();
+        }
+    }
+
+    public static V1Pod deletePod(Object[] args) throws ApiException, ClassCastException {
+        GenericKubernetesApi<V1Pod, V1PodList> api = getGenericK8sApiObj();
+        if (args == null || args.length < 2) {
+            throw new IllegalArgumentException("【入参无效异常】本操作必须输入目标pod的[namespace]和[name]作为前两位入参...");
+        } else {
+            //适配具体要调用的k8s接口的参数个数，防止数组越界
+            Object[] suitableParams = new Object[3];
+            for (int i = 0; i < suitableParams.length; i++) {
+                if (i > args.length - 1) {
+                    suitableParams[i] = null;
+                } else {
+                    suitableParams[i] = args[i];
+                }
+            }
+            return api.delete(getSuitableParam(suitableParams[0], String.class),
+                    getSuitableParam(suitableParams[1], String.class),
+                    getSuitableParam(suitableParams[2], DeleteOptions.class)).throwsApiException().getObject();
+        }
+    }
+
+    //----------------------------------------------服务资源写操作-------------------------------------------------
+
 
     public static V1PodList getAllPodList(Object[] args) throws K8sClientInitException, ApiException {
         // new a CoreV1Api
@@ -403,5 +571,4 @@ public class K8sInvokerClient {
         }
 
     }
-
 }

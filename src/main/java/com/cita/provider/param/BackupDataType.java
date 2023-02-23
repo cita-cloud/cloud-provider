@@ -1,22 +1,31 @@
 package com.cita.provider.param;
 
 public class BackupDataType {
-    transient Type type;
+    BackupFull full;
+    BackupState state;
 
-    public BackupDataType(Type type) {
-        this.type = type;
+    public BackupDataType() {
     }
 
-    public Type getType() {
-        return type;
+    public BackupDataType(BackupFull full, BackupState state) {
+        this.full = full;
+        this.state = state;
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public BackupFull getFull() {
+        return full;
     }
 
-    public enum Type {
-        FULL, STATE,
+    public void setFull(BackupFull full) {
+        this.full = full;
+    }
+
+    public BackupState getState() {
+        return state;
+    }
+
+    public void setState(BackupState state) {
+        this.state = state;
     }
 }
 
