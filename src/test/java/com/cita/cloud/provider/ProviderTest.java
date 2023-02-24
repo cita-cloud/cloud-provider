@@ -40,6 +40,7 @@ class ProviderTest {
 
         // backend
         Backend backend = new Backend();
+        // 集群中的首次备份需要先 createSecret
         backend.setRepoPasswordSecretRef(new RepoPasswordSecret("backup-repo", "password"));
         BackendLocal backendLocal = new BackendLocal("/hello", "nas-client-provisioner");
         backend.setLocal(backendLocal);
@@ -122,6 +123,29 @@ class ProviderTest {
         System.out.println("param: " + gson.toJson(secretParam));
         try {
             createSecret(secretParam1);
+        } catch (ApiException e) {
+            System.out.println("Response: " + e.getResponseBody());
+        }
+    }
+
+    @Test
+    void testBlockHeightFallback() {
+        Gson gson = new Gson();
+
+        // backupParam
+        BlockHeightFallbackParam blockHeightFallbackParam = BlockHeightFallbackParam.Builder.builder()
+                .namespace("zhujq")
+                .chain("test-chain-zenoh-overlord")
+                .node("test-chain-zenoh-overlord-node2")
+                .name("fallback-sample-1")
+                .deployMethod("cloud-config")
+                .blockHeight(1000)
+                .build();
+
+        System.out.println("param: " + gson.toJson(blockHeightFallbackParam));
+        try {
+            initApiClient(null);
+            blockHeightFallback(blockHeightFallbackParam);
         } catch (ApiException e) {
             System.out.println("Response: " + e.getResponseBody());
         }

@@ -62,10 +62,14 @@ public class Provider {
                     V1CitaBackup backup = gson.fromJson(res, V1CitaBackup.class);
                     System.out.println("V1CitaBackup: " + gson.toJson(backup));
                     customApi.createNamespacedCustomObject("rivtower.com", "v1cita", namespace, "backups",
-                            gson.fromJson(res, V1CitaBackup.class), null, null, null);
+                            res, null, null, null);
                     break;
                 case "Restore":
                     customApi.createNamespacedCustomObject("rivtower.com", "v1cita", namespace, "restores",
+                            res, null, null, null);
+                    break;
+                case "BlockHeightFallback":
+                    customApi.createNamespacedCustomObject("rivtower.com", "v1cita", namespace, "blockheightfallbacks",
                             res, null, null, null);
                     break;
                 default:
@@ -167,6 +171,24 @@ public class Provider {
         Gson gson = new Gson();
         JsonArray resources = new JsonArray(1);
         resources.add(gson.fromJson(gson.toJson(restore), JsonObject.class));
+        applyResources(param.getNamespace(), resources.toString());
+    }
+
+    public static void blockHeightFallback(BlockHeightFallbackParam param) throws ApiException {
+        V1CitaBlockHeightFallbackSpec blockHeightFallbackSpec = new V1CitaBlockHeightFallbackSpec();
+        blockHeightFallbackSpec.setChain(param.getChain());
+        blockHeightFallbackSpec.setNode(param.getNode());
+        blockHeightFallbackSpec.setBlockHeight(param.getBlockHeight());
+        blockHeightFallbackSpec.setDeployMethod(param.getDeployMethod());
+
+        V1ObjectMeta meta = new V1ObjectMeta();
+        meta.setNamespace(param.getNamespace());
+        meta.setName(param.getName());
+        V1CitaBlockHeightFallback blockHeightFallback = new V1CitaBlockHeightFallback(meta, blockHeightFallbackSpec);
+
+        Gson gson = new Gson();
+        JsonArray resources = new JsonArray(1);
+        resources.add(gson.fromJson(gson.toJson(blockHeightFallback), JsonObject.class));
         applyResources(param.getNamespace(), resources.toString());
     }
 }
