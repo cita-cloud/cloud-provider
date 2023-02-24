@@ -25,6 +25,9 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.cita.cloud.provider.k8s.K8sInvokerClient.*;
 
 public class Provider {
@@ -69,6 +72,28 @@ public class Provider {
                     throw new ApiException(400, "not support for the kind of resource: " + kind);
             }
         }
+    }
+
+    static void createSecret(SecretParam param) throws ApiException {
+        V1Secret secret = new V1Secret();
+        secret.setApiVersion("v1");
+        secret.setKind("Secret");
+        secret.setType("Opaque");
+        V1ObjectMeta meta = new V1ObjectMeta();
+        meta.setNamespace(param.getNamespace());
+        meta.setName(param.getName());
+        secret.setMetadata(meta);
+        Map<String, String> stringData = new HashMap<>();
+        if (param.getUsername() != null) {
+            stringData.put("username", param.getUsername());
+        }
+        stringData.put("password", param.getPassword());
+        secret.setStringData(stringData);
+
+        Gson gson = new Gson();
+        JsonArray resources = new JsonArray(1);
+        resources.add(gson.fromJson(gson.toJson(secret), JsonObject.class));
+        applyResources(param.getNamespace(), resources.toString());
     }
 
     public static void backup(BackupParam param) throws ApiException {

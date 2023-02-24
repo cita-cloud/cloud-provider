@@ -23,8 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.cita.cloud.provider.Provider.backup;
-import static com.cita.cloud.provider.Provider.restore;
+import static com.cita.cloud.provider.Provider.*;
 import static com.cita.cloud.provider.k8s.K8sInvokerClient.initApiClient;
 
 class ProviderTest {
@@ -62,7 +61,6 @@ class ProviderTest {
             backup(backupParam);
         } catch (ApiException e) {
             System.out.println("Response: " + e.getResponseBody());
-            throw new RuntimeException(e);
         }
     }
 
@@ -92,7 +90,40 @@ class ProviderTest {
             restore(restoreParam);
         } catch (ApiException e) {
             System.out.println("Response: " + e.getResponseBody());
-            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void testCreateSecret() {
+        // backup-repo
+        SecretParam secretParam = SecretParam.Builder.builder()
+                .namespace("zhujq")
+                .name("backup-repo")
+                .password("p@ssw0rd")
+                .build();
+
+        Gson gson = new Gson();
+        System.out.println("param: " + gson.toJson(secretParam));
+        try {
+            initApiClient(null);
+            createSecret(secretParam);
+        } catch (ApiException e) {
+            System.out.println("Response: " + e.getResponseBody());
+        }
+
+        // minio-credentials
+        SecretParam secretParam1 = SecretParam.Builder.builder()
+                .namespace("zhujq")
+                .name("minio-credentials")
+                .username("minio")
+                .password("minio123")
+                .build();
+
+        System.out.println("param: " + gson.toJson(secretParam));
+        try {
+            createSecret(secretParam1);
+        } catch (ApiException e) {
+            System.out.println("Response: " + e.getResponseBody());
         }
     }
 }
