@@ -78,7 +78,7 @@ public class Provider {
         }
     }
 
-    static void createSecret(SecretParam param) throws ApiException {
+    public static void createSecret(SecretParam param) throws ApiException {
         V1Secret secret = new V1Secret();
         secret.setApiVersion("v1");
         secret.setKind("Secret");
@@ -189,6 +189,34 @@ public class Provider {
         Gson gson = new Gson();
         JsonArray resources = new JsonArray(1);
         resources.add(gson.fromJson(gson.toJson(blockHeightFallback), JsonObject.class));
+        applyResources(param.getNamespace(), resources.toString());
+    }
+
+    public static void loadBalancer(LoadBalancerParam param) throws ApiException {
+        V1ObjectMeta meta = new V1ObjectMeta();
+        meta.setNamespace(param.getNamespace());
+        meta.setName(param.getName());
+        meta.setAnnotations(param.getAnnotations());
+
+        V1Service loadBalancer = new V1Service();
+        loadBalancer.setMetadata(meta);
+        loadBalancer.setApiVersion("v1");
+        loadBalancer.setKind("Service");
+        V1ServiceSpec loadBalancerSpec = new V1ServiceSpec();
+        loadBalancerSpec.setType("LoadBalancer");
+        Map<String, String> selector = new HashMap<>();
+        selector.put("node_name", param.getNodeName());
+        loadBalancerSpec.setSelector(selector);
+        if (param.getLoadBalancerIP() != null && !"".equals(param.getLoadBalancerIP())) {
+            loadBalancerSpec.setLoadBalancerIP(param.getLoadBalancerIP());
+        }
+        loadBalancerSpec.setPorts(param.getPorts());
+        loadBalancer.setSpec(loadBalancerSpec);
+
+
+        Gson gson = new Gson();
+        JsonArray resources = new JsonArray(1);
+        resources.add(gson.fromJson(gson.toJson(loadBalancer), JsonObject.class));
         applyResources(param.getNamespace(), resources.toString());
     }
 }
