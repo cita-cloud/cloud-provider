@@ -99,12 +99,14 @@ class ProviderTest {
     }
 
     @Test
-    void testCreateSecret() {
+    void testCreateBackupAndRestoreSecret() {
         // backup-repo
+        Map<String, String> data = new HashMap<>();
+        data.put("password", "p@ssw0rd");
         SecretParam secretParam = SecretParam.Builder.builder()
                 .namespace("zhujq")
                 .name("backup-repo")
-                .password("p@ssw0rd")
+                .stringData(data)
                 .build();
 
         Gson gson = new Gson();
@@ -117,11 +119,13 @@ class ProviderTest {
         }
 
         // minio-credentials
+        Map<String, String> data1 = new HashMap<>();
+        data.put("username", "minio");
+        data.put("password", "minio123");
         SecretParam secretParam1 = SecretParam.Builder.builder()
                 .namespace("zhujq")
                 .name("minio-credentials")
-                .username("minio")
-                .password("minio123")
+                .stringData(data1)
                 .build();
 
         System.out.println("param: " + gson.toJson(secretParam));
@@ -225,6 +229,45 @@ class ProviderTest {
         try {
             initApiClient(null);
             loadBalancer(param);
+        } catch (ApiException e) {
+            System.out.println("Response: " + e.getResponseBody());
+        }
+    }
+
+    @Test
+    void testCreateIngressSecret() {
+        // ca
+        Map<String, String> data = new HashMap<>();
+        data.put("ca.crt", "LS0tLS1CR...");
+        SecretParam secretParam = SecretParam.Builder.builder()
+                .namespace("zhujq")
+                .name("chain-826454031529545728-ca")
+                .stringData(data)
+                .build();
+
+        Gson gson = new Gson();
+        System.out.println("param: " + gson.toJson(secretParam));
+        try {
+            initApiClient(null);
+            createSecret(secretParam);
+        } catch (ApiException e) {
+            System.out.println("Response: " + e.getResponseBody());
+        }
+
+        // tls
+
+        Map<String, String> data1 = new HashMap<>();
+        data.put("tls.crt", "LS0tLS1CRUdJTi...");
+        data.put("tls.key", "LS0tLS1CRUdJTi...");
+        SecretParam secretParam1 = SecretParam.Builder.builder()
+                .namespace("zhujq")
+                .name("all-chain-826454031529545728-0-tls")
+                .stringData(data1)
+                .build();
+
+        System.out.println("param: " + gson.toJson(secretParam1));
+        try {
+            createSecret(secretParam1);
         } catch (ApiException e) {
             System.out.println("Response: " + e.getResponseBody());
         }

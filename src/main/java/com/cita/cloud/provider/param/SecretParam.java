@@ -1,19 +1,35 @@
+// Copyright Rivtower Technologies LLC.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.cita.cloud.provider.param;
+
+import java.util.Map;
 
 public class SecretParam {
     String name;
     String namespace;
-    String username;
-    String password;
+    Map<String, String> stringData;
+    Map<String, byte[]> data;
 
     public SecretParam() {
     }
 
-    public SecretParam(String name, String namespace, String username, String password) {
+    public SecretParam(String name, String namespace, Map<String, String> stringData, Map<String, byte[]> data) {
         this.name = name;
         this.namespace = namespace;
-        this.username = username;
-        this.password = password;
+        this.stringData = stringData;
+        this.data = data;
     }
 
     public String getName() {
@@ -32,27 +48,27 @@ public class SecretParam {
         this.namespace = namespace;
     }
 
-    public String getUsername() {
-        return username;
+    public Map<String, String> getStringData() {
+        return stringData;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setStringData(Map<String, String> stringData) {
+        this.stringData = stringData;
     }
 
-    public String getPassword() {
-        return password;
+    public Map<String, byte[]> getData() {
+        return data;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setData(Map<String, byte[]> data) {
+        this.data = data;
     }
 
     public static final class Builder {
         private String name;
         private String namespace;
-        private String username;
-        private String password;
+        private Map<String, String> stringData;
+        private Map<String, byte[]> data;
 
         private Builder() {
         }
@@ -71,13 +87,13 @@ public class SecretParam {
             return this;
         }
 
-        public Builder username(String username) {
-            this.username = username;
+        public Builder stringData(Map<String, String> stringData) {
+            this.stringData = stringData;
             return this;
         }
 
-        public Builder password(String password) {
-            this.password = password;
+        public Builder data(Map<String, byte[]> data) {
+            this.data = data;
             return this;
         }
 
@@ -85,8 +101,8 @@ public class SecretParam {
             SecretParam secretParam = new SecretParam();
             secretParam.setName(name);
             secretParam.setNamespace(namespace);
-            secretParam.setUsername(username);
-            secretParam.setPassword(password);
+            secretParam.setStringData(stringData);
+            secretParam.setData(data);
             return secretParam;
         }
     }

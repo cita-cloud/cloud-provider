@@ -87,12 +87,8 @@ public class Provider {
         meta.setNamespace(param.getNamespace());
         meta.setName(param.getName());
         secret.setMetadata(meta);
-        Map<String, String> stringData = new HashMap<>();
-        if (param.getUsername() != null) {
-            stringData.put("username", param.getUsername());
-        }
-        stringData.put("password", param.getPassword());
-        secret.setStringData(stringData);
+        secret.setStringData(param.getStringData());
+        secret.setData(param.getData());
 
         Gson gson = new Gson();
         JsonArray resources = new JsonArray(1);
