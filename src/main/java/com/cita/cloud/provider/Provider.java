@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
+import io.kubernetes.client.openapi.apis.NetworkingV1Api;
 import io.kubernetes.client.openapi.models.*;
 
 import java.util.HashMap;
@@ -34,6 +35,7 @@ public class Provider {
     public static void applyResources(String namespace, String resourcesJsonArrayStr) throws ApiException {
         AppsV1Api appV1Api = getAppApiObj();
         CoreV1Api coreV1Api = getCoreApiObj();
+        NetworkingV1Api networkApiObj = getNetworkApiObj();
         CustomObjectsApi customApi = getCustomApiObj();
         Gson gson = new Gson();
 
@@ -57,6 +59,10 @@ public class Provider {
                 case "Secret":
                     V1Secret secret = gson.fromJson(res, V1Secret.class);
                     coreV1Api.createNamespacedSecret(namespace, secret, null, null, null, null);
+                    break;
+                case "Ingress":
+                    V1Ingress ingress = gson.fromJson(res, V1Ingress.class);
+                    networkApiObj.createNamespacedIngress(namespace, ingress, null, null, null, null);
                     break;
                 case "Backup":
                     V1CitaBackup backup = gson.fromJson(res, V1CitaBackup.class);
@@ -213,6 +219,27 @@ public class Provider {
         Gson gson = new Gson();
         JsonArray resources = new JsonArray(1);
         resources.add(gson.fromJson(gson.toJson(loadBalancer), JsonObject.class));
+        applyResources(param.getNamespace(), resources.toString());
+    }
+
+    public static void ingress(IngressParam param) throws ApiException {
+        V1ObjectMeta meta = new V1ObjectMeta();
+        meta.setNamespace(param.getNamespace());
+        meta.setName(param.getName());
+        meta.setAnnotations(param.getAnnotations());
+
+        V1Ingress ingress = new V1Ingress();
+        ingress.setMetadata(meta);
+        ingress.setApiVersion("networking.k8s.io/v1");
+        ingress.setKind("Ingress");
+        V1IngressSpec ingressSpec = new V1IngressSpec();
+        ingressSpec.setRules(param.getRules());
+        ingressSpec.setTls(param.getTls());
+        ingress.setSpec(ingressSpec);
+
+        Gson gson = new Gson();
+        JsonArray resources = new JsonArray(1);
+        resources.add(gson.fromJson(gson.toJson(ingress), JsonObject.class));
         applyResources(param.getNamespace(), resources.toString());
     }
 }

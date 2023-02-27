@@ -19,7 +19,7 @@ import com.cita.cloud.provider.param.*;
 import com.google.gson.Gson;
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ServicePort;
+import io.kubernetes.client.openapi.models.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -241,7 +241,7 @@ class ProviderTest {
         data.put("ca.crt", "LS0tLS1CR...");
         SecretParam secretParam = SecretParam.Builder.builder()
                 .namespace("zhujq")
-                .name("chain-826454031529545728-ca")
+                .name("chain-923454031529545456-ca")
                 .stringData(data)
                 .build();
 
@@ -255,19 +255,80 @@ class ProviderTest {
         }
 
         // tls
-
         Map<String, String> data1 = new HashMap<>();
         data.put("tls.crt", "LS0tLS1CRUdJTi...");
         data.put("tls.key", "LS0tLS1CRUdJTi...");
         SecretParam secretParam1 = SecretParam.Builder.builder()
                 .namespace("zhujq")
-                .name("all-chain-826454031529545728-0-tls")
+                .name("all-chain-923454031529545456-0-tls")
                 .stringData(data1)
                 .build();
 
         System.out.println("param: " + gson.toJson(secretParam1));
         try {
             createSecret(secretParam1);
+        } catch (ApiException e) {
+            System.out.println("Response: " + e.getResponseBody());
+        }
+    }
+
+    @Test
+    void testIngress() {
+        Map<String, String> annotations = new HashMap<>();
+        annotations.put("kubernetes.io/ingress.class", "nginx");
+        annotations.put("nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream", "true");
+        annotations.put("nginx.ingress.kubernetes.io/auth-tls-secret", "rivspace/chain-923454031529545456-ca");
+        annotations.put("nginx.ingress.kubernetes.io/auth-tls-verify-client", "on");
+        annotations.put("nginx.ingress.kubernetes.io/auth-tls-verify-depth", "1");
+        annotations.put("nginx.ingress.kubernetes.io/backend-protocol", "GRPC");
+
+        List<V1IngressRule> rules = new ArrayList<>();
+
+        List<V1HTTPIngressPath> paths = new ArrayList<>();
+        paths.add(new V1HTTPIngressPath()
+                .path("/")
+                .pathType("Prefix")
+                .backend(
+                        new V1IngressBackend()
+                                .service(
+                                        new V1IngressServiceBackend()
+                                                .name("all-chain-923454031529545456-0")
+                                                .port(new V1ServiceBackendPort().name("rpc"))
+                                )
+                )
+        );
+        rules.add(new V1IngressRule()
+                .host("rpc-chain-923454031529545456-0.rivspace.rivtower.xyz")
+                .http(new V1HTTPIngressRuleValue().paths(paths))
+        );
+        rules.add(new V1IngressRule()
+                .host("call-chain-923454031529545456-0.rivspace.rivtower.xyz")
+                .http(new V1HTTPIngressRuleValue().paths(paths))
+        );
+
+        List<V1IngressTLS> tls = new ArrayList<>();
+        List<String> hosts = new ArrayList<>();
+        hosts.add("rpc-chain-923454031529545456-0.rivspace.rivtower.xyz");
+        hosts.add("call-chain-923454031529545456-0.rivspace.rivtower.xyz");
+        tls.add(
+                new V1IngressTLS()
+                        .secretName("all-chain-923454031529545456-0-tls")
+                        .hosts(hosts)
+        );
+
+        IngressParam param = IngressParam.Builder.builder()
+                .namespace("zhujq")
+                .name("all-chain-923454031529545456-0")
+                .annotations(annotations)
+                .rules(rules)
+                .tls(tls)
+                .build();
+
+        Gson gson = new Gson();
+        System.out.println("param: " + gson.toJson(param));
+        try {
+            initApiClient(null);
+            ingress(param);
         } catch (ApiException e) {
             System.out.println("Response: " + e.getResponseBody());
         }
